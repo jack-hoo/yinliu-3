@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1">
+    <link rel="shortcut icon" href="/favicon.ico">
+    <title>hello</title>
+
+    <link href="https://cdn.bootcss.com/element-ui/1.4.6/theme-default/index.css" rel="stylesheet">
+
+
+    <title>管理面板</title>
+    <style>
+        .el-table .info-row {
+            background: #c9e5f5;
+        }
+
+        .el-table .positive-row {
+            background: #e2f0e4;
+        }
+        .el-menu-item a {
+            text-decoration: none
+        }
+        .tool-bar {
+            margin-top: 20px;
+        }
+        .footer {
+            float: right;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <el-menu theme="dark"  class="" mode="horizontal" >
+            <el-menu-item index="1"><a href="/main" >引流系统</a></el-menu-item>
+
+            <el-menu-item index="3" style="float: right"><a href="/admin">管理员</a></el-menu-item>
+        </el-menu>
+        <div class="tool-bar" style="background-color: aliceblue;height: 52px;line-height: 48px;padding-left: 10px;">
+            <!--<el-row style="display: inline-block">
+                <el-button>导入卡券</el-button>
+            </el-row>-->
+            <el-button type="danger"  @click="deleteCa">删除</el-button>
+            <el-upload style="display: inline-block"
+                    class="upload-demo"
+                    action="/card/import_common" :on-success="importSuccess"
+                    :show-file-list="false"
+                    >
+                <el-button type="info">导入引流卡密</el-button>
+            </el-upload>
+            <el-upload style="display: inline-block"
+                       class="upload-demo"
+                       action="/card/import_laxin" :on-success="importSuccess"
+                       :show-file-list="false"
+            >
+                <el-button type="info">导入拉新卡密</el-button>
+            </el-upload>
+            <el-row style="display: inline-block">
+
+                <el-button type="success" @click="taskBatch">手动批量任务</el-button>
+                <el-button  @click="reset">重置</el-button>
+            </el-row>
+
+            <el-date-picker style="float: right" @change="timeSelect"
+                    v-model="value4"
+                    type="datetimerange"
+                    :picker-options="pickerOptions2"
+                    placeholder="选择使用时间范围"
+                    range-separator="~"
+                    align="right">
+            </el-date-picker>
+        </div>
+        <div class="main">
+            <el-row style="margin-top: 20px;">
+                <el-table
+                        :data="cards"
+                        style="width: 100%"
+                        border
+                        @sort-change="sort"
+                        @selection-change="selectionChange"
+                >
+                    <el-table-column
+                            type="selection"
+                            width="55">
+                    </el-table-column>
+                    <el-table-column
+                            type="index"
+                            width="70">
+                    </el-table-column>
+                    <el-table-column
+                            prop="cardNumber"
+                            label="卡号"
+                            width="220">
+                    </el-table-column>
+                    <el-table-column
+                            prop="usedForType"
+                            label="业务类型"
+                            width="120"
+                            :formatter="typeFormatter"
+                            sortable>
+                    </el-table-column>
+                    <el-table-column
+                            prop="used"
+                            label="使用状态"
+                            width="120"
+                            :formatter="usedFormatter"
+                            sortable="custom">
+                    </el-table-column>
+                    <el-table-column
+                            prop="usedTime"
+                            label="使用时间"
+                            width="220"
+                            sortable="custom">
+                    </el-table-column>
+                    <el-table-column
+                            prop="link"
+                            label="引流链接"
+                            width="240"
+
+                            >
+                    </el-table-column>
+                    <el-table-column
+                            prop="taskState"
+                            label="任务状态"
+                            :formatter="taskStateFormatter"
+                    >
+                    </el-table-column>
+                    <el-table-column
+                            prop="link"
+                            label="操作"
+                    >
+                        <template scope="scope">
+                        <el-button v-if="!scope.row.taskState && scope.row.used"
+                                size="small"
+                                @click="handSingleTask(scope.$index, scope.row)">开启任务</el-button>
+                        <el-button v-if="scope.row.taskState"
+                                   size="small" type="success">任务完成</el-button>
+                    </template>
+                    </el-table-column>
+                </el-table>
+            </el-row>
+        </div>
+        <div class="footer">
+            <el-pagination
+                    layout="prev, pager, next"
+                    :total="page.totalPage"  :page-size="params.limit" @current-change="goPage">
+            </el-pagination>
+        </div>
+        <el-dialog title="批量任务" :visible.sync="dialogFormVisible">
+            <p style="">在第三方网站完成引流后,必须点击任务完成按钮！！！</p><span>链接数:{{task.length}}</span>
+            <el-input
+                    type="textarea"
+                    :rows="10"
+                    placeholder="请输入内容"
+                    v-model="textarea">
+            </el-input>
+            <div slot="footer" class="dialog-footer">
+                <el-button @click="copy(textarea)">复制链接</el-button>
+                <el-button type="primary" :loading="loading" @click="completeTask">任务完成</el-button>
+            </div>
+        </el-dialog>
+    </div>
+    <script src="https://cdn.bootcss.com/vue/2.4.4/vue.js"></script>
+    <script src="https://cdn.bootcss.com/element-ui/1.4.6/index.js"></script>
+    <script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.js"></script>
+    <script>
+        var app = new Vue({
+            el:'#app',
+            data:{
+                textarea:'',
+                dialogFormVisible:false,
+                page:{
+                    currPage:'',
+                    totalPage:null,
+                    pageSize:10
+                },
+                params:{
+                  page:1,
+                  limit:10,
+                  order:'',
+                  sidx:'',
+                  used:'',
+                  usedForType: 0,
+                  taskState:'',
+                  usedTimeStart:'',
+                  usedTimeEnd:''
+                },
+                cards:[],
+                loading:false,
+                task:[],
+                pickerOptions2: {
+                    shortcuts: [
+                        {
+                            text: '过去一天',
+                            onClick:function(picker) {
+                                const end = new Date();
+                                const start = new Date();
+                                start.setTime(start.getTime() - 3600 * 1000 * 24 * 1);
+                                picker.$emit('pick', [start, end]);
+                            }
+                        },{
+                        text: '最近一周',
+                        onClick:function(picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: '最近一个月',
+                        onClick:function(picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: '最近三个月',
+                        onClick:function(picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }]
+                },
+                value3: [new Date(2000, 10, 10, 10, 10), new Date(2000, 10, 11, 10, 10)],
+                value4: '',
+                selection:null
+
+            },
+            methods:{
+                deleteCa:function () {
+                    if (this.selection.length == 0){
+                        app.$message.error("请至少选择一条数据！");
+                        return false;
+                    }
+                    var ids = []
+                    this.selection.forEach(function(item,index){
+                        ids.push(item.cardId)
+                    })
+                    $.ajax({
+                        url : "/card",
+                        type : 'delete',
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        data: JSON.stringify(ids),
+                        success : function(data) {
+                            console.log(data)
+                            if (data.code == 0){
+                                app.getListData()
+                            }
+                        },
+                        error : function(data) {
+                            alert(data);
+                        },
+                    })
+                },
+                selectionChange:function (selection) {
+                    console.log(selection)
+                    this.selection = selection
+                },
+                importSuccess:function(response, file, fileList){
+                    if (response.code == 0){
+                        this.$notify({
+                            title: '导入成功',
+                            message: '成功导入'+response.size+'条',
+                            type: 'success'
+                        });
+                        this.getListData()
+                    }else {
+                        this.$notify.error({
+                            title: '导入错误',
+                            message: response.msg
+                        });
+                    }
+                },
+                getListData:function(){
+                    var params = this.params
+                    var url = "/card?page="+ params.page + "&limit=" + params.limit + "&order=" + params.order + "&sidx=" + params.sidx+ "&used=" + params.used+ "&usedTimeStart=" + params.usedTimeStart+"&usedTimeEnd="+params.usedTimeEnd+"&taskState="+params.taskState
+                    $.ajax({
+                        url : url,
+                        type : 'get',
+                        success : function(data) {
+                            if (data.code == 0){
+                                app.cards = data.page.list
+                                app.page.totalPage = data.page.totalCount
+                            }
+                            if (data.code == 500){
+                                app.$message.error(data.msg);
+                            }
+                        },
+                        error : function(data) {
+                            alert(data);
+                        },
+                    })
+                },
+                taskStateFormatter:function(row,column){
+                    if (row.taskState) {
+                        return "已完成"
+                    }
+                    if (row.taskState == false && row.used == true ){
+                        return "待处理"
+                    }
+                },
+                usedFormatter:function(row,column){
+                    if (row.used) {
+                        return "已使用"
+                    }else {
+                        return "未使用"
+                    }
+                },
+                typeFormatter:function (row,column) {
+                    if (row.usedForType == 0) {
+                        return "引流";
+                    }
+                    if (row.usedForType == 1) {
+                        return "淘宝拉新";
+                    }
+                },
+                timeSelect:function(time){
+                    app.params.usedTimeStart = time.split('~')[0]
+                    app.params.usedTimeEnd = time.split('~')[1]
+                    app.getListData()
+                },
+                reset:function(){
+                    app.params={
+                        page:1,
+                        limit:10,
+                        order:'',
+                        sidx:'',
+                        used:'',
+                        taskState:'',
+                        usedTimeStart:'',
+                        usedTimeEnd:''
+                    }
+                    app.getListData()
+                },
+                sort:function(column, prop, order){
+                    //console.log(column.prop)
+                    if (column.prop === "used" && column.order === "ascending"){
+                        app.params.used = 1
+                    }
+                    if (column.prop === "used" && column.order === "descending"){
+                        app.params.used = 0
+                    }
+                    if (column.prop === "usedTime" && column.order === "descending"){
+                        app.params.order = 'used_time'
+                        app.params.sidx = 'desc'
+                        app.params.used = 1
+                    }
+                    if (column.prop === "usedTime" && column.order === "ascending"){
+                        app.params.order = 'used_time'
+                        app.params.sidx = 'asc'
+                        app.params.used = 1
+                    }
+                    //console.log(app.params)
+                    app.getListData()
+                },
+                goPage:function(currPage){
+                    app.params.page=currPage
+                    app.getListData()
+                },
+                copy:function(copyContent){
+                    var textArea = document.createElement("textarea");
+                    textArea.style.background = 'transparent';
+                    textArea.value = copyContent;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    try {
+                        var successful = document.execCommand('copy');
+                        app.$message.success('已复制到剪贴板')
+                    } catch (err) {
+                        console.log('Oops, unable to copy');
+                    }
+                    document.body.removeChild(textArea);
+                },
+                completeTask:function(){
+                    app.loading=true
+                    //开始任务
+                    $.ajax({
+                        url: '/card',
+                        type: 'put',
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        data : JSON.stringify(app.task),
+                        success : function(data) {
+                            if (data.code == 0){
+                                app.dialogFormVisible = false
+                                app.reset()
+                            }else {
+                                app.dialogFormVisible = false
+                                app.$message.info(data.msg)
+                            }
+                        }
+                    })
+
+                },
+                handSingleTask:function(index ,row){
+                    app.task = []
+                    app.task.push(row)
+                    //开始任务
+                    $.ajax({
+                        url: '/card',
+                        type: 'put',
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        data : JSON.stringify(app.task),
+                        success : function(data) {
+                            if (data.code == 0){
+                                app.reset()
+                            }else {
+                                app.$message.info(data.msg)
+                            }
+                        }
+                    })
+                },
+                taskBatch:function(){
+                    app.dialogFormVisible = true
+                    //获取未完成的任务
+                    var url = "/card?used=1&taskState=0"
+                    $.ajax({
+                        url : url,
+                        type : 'get',
+                        success : function(data) {
+                            if (data.code == 0){
+                                app.task = data.list
+                                data.list.forEach(function(item,index){
+                                    app.textarea += item.link ;
+                                    app.textarea += '\n'
+                                })
+                            }
+                            if (data.code == 500){
+                                app.$message.error(data.msg);
+                            }
+                        },
+                        error : function(data) {
+                            alert(data);
+                        },
+                        dataType : 'json',
+                    })
+                }
+            },
+            mounted:function(){
+                //console.log(this.params)
+                this.getListData()
+            }
+        })
+    </script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.miner.dao.CardStatDao">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.miner.entity.CardStatEntity" id="cardStatMap">
+        <result property="cardId" column="card_id"/>
+        <result property="cardNumber" column="card_number"/>
+        <result property="link" column="link"/>
+        <result property="createTime" column="create_time"/>
+        <result property="usedTime" column="used_time"/>
+        <result property="used" column="used"/>
+        <result property="taskState" column="task_state"/>
+        <result property="taskId" column="task_id"/>
+        <result property="usedForType" column="used_for_type"/>
+    </resultMap>
+
+	<select id="queryObject" resultType="com.miner.entity.CardStatEntity">
+		select * from card_stat where card_id = #{value}
+	</select>
+    <select id="queryByCardNumber" resultType="com.miner.entity.CardStatEntity">
+        select * from card_stat where card_number = #{value}
+    </select>
+
+	<select id="queryList" resultType="com.miner.entity.CardStatEntity">
+		select * from card_stat
+
+        <where>
+            <if test=" used != null and used != '' ">
+                used = #{used}
+            </if>
+            <if test=" taskState != null and taskState != '' ">
+               AND task_state = #{taskState}
+            </if>
+            <if test="usedTimeStart != null and usedTimeEnd != '' ">
+                and used_time &gt;= #{usedTimeStart}
+            </if>
+            <if test="usedTimeStart != null and usedTimeEnd != '' ">
+                and used_time &lt;= #{usedTimeEnd}
+            </if>
+        </where>
+        <choose>
+            <when test="sidx != null and sidx.trim() != ''">
+                order by ${order} ${sidx}
+            </when>
+			<otherwise>
+                order by used_time desc
+			</otherwise>
+        </choose>
+		<if test="offset != null and limit != null">
+			limit #{offset}, #{limit}
+		</if>
+	</select>
+	
+ 	<select id="queryTotal" resultType="int">
+        select count(*) from card_stat
+        <where>
+            <if test=" used != null and used != '' ">
+                used = #{used}
+            </if>
+            <if test=" taskState != null and taskState != '' ">
+               AND task_state = #{taskState}
+            </if>
+            <if test="usedTimeStart != null and usedTimeEnd != ''">
+                and used_time &gt;= #{usedTimeStart}
+            </if>
+            <if test="usedTimeStart != null and usedTimeEnd != ''">
+                and used_time &lt;= #{usedTimeEnd}
+            </if>
+        </where>
+
+	</select>
+	 
+	<insert id="save" parameterType="com.miner.entity.CardStatEntity" useGeneratedKeys="true" keyProperty="cardId">
+		insert into card_stat
+		<set>
+			<if test="cardNumber != null">`card_number` = #{cardNumber}, </if>
+			<if test="link != null">`link` = #{link}, </if>
+			<if test="createTime != null">`create_time` = #{createTime}, </if>
+			<if test="usedTime != null">`used_time` = #{usedTime}</if>
+			<if test="used != null">`used` = #{used},</if>
+			<if test="usedForType != null">`used_for_type` = #{usedForType},</if>
+			<if test="taskState != null">`task_state` = #{taskState},</if>
+			<if test="taskState != null">`task_id` = #{taskId}</if>
+		</set>
+	</insert>
+
+    <insert id="saveBatch" parameterType="java.util.List">
+        insert into card_stat
+        (card_number)
+        VALUES
+        <foreach collection ="list" item="card" index= "index" separator =",">
+             (
+             #{card.cardNumber}
+             )
+        </foreach >
+
+    </insert>
+
+	<update id="update" parameterType="com.miner.entity.CardStatEntity">
+		update card_stat 
+		<set>
+			<if test="cardNumber != null">`card_number` = #{cardNumber}, </if>
+			<if test="link != null">`link` = #{link}, </if>
+			<if test="createTime != null">`create_time` = #{createTime}, </if>
+			<if test="usedTime != null">`used_time` = #{usedTime},</if>
+            <if test="used != null">`used` = #{used},</if>
+            <if test="usedForType != null">`used_for_type` = #{usedForType},</if>
+            <if test="taskState != null">`task_state` = #{taskState},</if>
+            <if test="taskState != null">`task_id` = #{taskId}</if>
+
+        </set>
+		where card_id = #{cardId}
+	</update>
+	
+	<delete id="delete">
+		delete from card_stat where card_id = #{value}
+	</delete>
+	
+	<delete id="deleteBatch">
+		delete from card_stat where card_id in 
+		<foreach item="cardId" collection="array" open="(" separator="," close=")">
+			#{cardId}
+		</foreach>
+	</delete>
+
+</mapper>

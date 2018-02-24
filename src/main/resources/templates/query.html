@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1">
+    <link rel="shortcut icon" href="/favicon.ico">
+    <title>查询引流</title>
+
+    <link href="https://cdn.bootcss.com/element-ui/1.4.6/theme-default/index.css" rel="stylesheet">
+    <script src="https://cdn.bootcss.com/vue/2.4.4/vue.js"></script>
+    <script src="https://cdn.bootcss.com/element-ui/1.4.6/index.js"></script>
+    <script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.js"></script>
+    <style>
+        .el-menu-item a {
+            text-decoration: none
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <el-menu theme="dark" default-active="3" class="el-menu-demo" mode="horizontal">
+        <el-menu-item index="1"><a href="/main">引流自助系统</a></el-menu-item>
+        <el-menu-item index="2"><a href="http://www.youka.la/product/EA1E4D9447B0C744?1=" target="_blank">购买</a></el-menu-item>
+        <el-menu-item index="3"><a href="/query">查询引流</a></el-menu-item>
+        <el-menu-item index="4" style="float: right"><a href="/admin">管理员登录</a></el-menu-item>
+    </el-menu>
+    <div class="main">
+        <el-row>
+            <el-col :span="20" :offset="2">
+                <h3>引流订单查询</h3>
+                <el-form ref="yinliu" label-width="80px">
+                    <el-form-item label="引流码">
+                        <el-input v-model="code" placeholder="请输入引流码"></el-input>
+                    </el-form-item>
+                    <el-form-item >
+                        <el-button type="primary" @click="query" >查询</el-button>
+                        <el-button @click="code=''">重置</el-button>
+                    </el-form-item>
+                </el-form>
+                <h4>数据记录</h4>
+                <div style="margin-top: 5px;">
+                    <el-table
+                            :data="tableData"
+                            style="width: 100%">
+                        <el-table-column
+                                prop="url"
+                                label="url"
+                                width="180">
+                        </el-table-column>
+                        <el-table-column
+                                prop="today"
+                                label="今天"
+                                width="180">
+                        </el-table-column>
+                        <el-table-column
+                                prop="yesterday"
+                                label="昨天"
+                                width="180">
+                        </el-table-column>
+                        <el-table-column
+                                prop="state"
+                                label="状态">
+                        </el-table-column>
+                        <el-table-column
+                                prop="timeStart"
+                                label="时间">
+                        </el-table-column>
+                    </el-table>
+                </div>
+            </el-col>
+        </el-row>
+
+    </div>
+</div>
+<script>
+    var app = new Vue({
+        el: '#app',
+        data:function () {
+            return{
+                code:'',
+                tableData: []
+            }
+        },
+        methods: {
+            query:function () {
+                if(this.code == '' || this.code == null){
+                    this.$message('引流码不能为空');
+                    return false;
+                }
+                $.ajax({
+                    url:"/card/query_state?code="+this.code,
+                    type:'get',
+                    success:function(data){
+                        console.log(data)
+                        var dataInsert = {
+                            url : data.url,
+                            today: data.result.today,
+                            yesterday: data.result.yesterday,
+                            state: data.state,
+                            timeStart: data.timeStart
+                        }
+                        app.tableData.push(dataInsert)
+                    }
+                })
+            }
+        }
+    })
+</script>
+</body>
+</html>

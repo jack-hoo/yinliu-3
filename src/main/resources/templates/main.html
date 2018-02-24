@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1">
+    <link rel="shortcut icon" href="/favicon.ico">
+    <title>引流自助下单系统</title>
+
+    <link href="https://cdn.bootcss.com/element-ui/1.4.6/theme-default/index.css" rel="stylesheet">
+    <script src="https://cdn.bootcss.com/vue/2.4.4/vue.js"></script>
+    <script src="https://cdn.bootcss.com/element-ui/1.4.6/index.js"></script>
+    <script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.js"></script>
+    <style>
+        .el-menu-item a {
+            text-decoration: none
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <el-menu theme="dark" default-active="1" class="el-menu-demo" mode="horizontal" @select="handleSelect">
+        <el-menu-item index="1"><a href="/main">引流自助系统</a></el-menu-item>
+        <el-menu-item index="2"><a href="http://www.youka.la/product/EA1E4D9447B0C744?1=" target="_blank">购买</a>
+        </el-menu-item>
+        <el-menu-item index="3"><a href="/query">查询引流</a></el-menu-item>
+        <el-menu-item index="4" style="float: right"><a href="/admin">管理员登录</a></el-menu-item>
+    </el-menu>
+    <div class="main">
+        <el-row style="margin-top: 20px; background-color: aliceblue;
+    padding: 5px;">
+            <el-col :span="24">
+                <div class="grid-content bg-purple-dark">
+
+                    <div style="color: red ;margin-left: 100px">
+                    <span>
+                    <span style="color: #20a0ff;margin-left: -30px;">说明:</span>链接勿带优惠券商品！否则引流会不成功！<br>
+                    下单开始引流，2小时完成！<br>
+                    22点之后下单的第二天引流！<br>
+                    关注微信公众号”木木联盟引流”获取更多内容！<br>
+                        <a href="http://mp.weixin.qq.com/s/WwJnLw4XBduzSqy-5jRWeQ" target="_blank">如何刷引流</a>
+                        <a href="http://mp.weixin.qq.com/s/WbnKMiaVPhoNTfkz_T6E9g" style="margin-left: 12px"
+                           target="_blank">如何刷订单 </a>
+                        <a href="http://mp.weixin.qq.com/s/a9wHFfZX3HYKZM4VWUd6eQ" style="margin-left: 12px"
+                           target="_blank">找不到链接 </a>
+                        <a href="http://mp.weixin.qq.com/s/nyuOImODtxjxRMdujKPCEQ" style="margin-left: 12px"
+                           target="_blank">忘记引流码</a>
+                        <a href="http://mp.weixin.qq.com/s/6nzKLAICH-SrpdGewyTQ1g" style="margin-left: 12px"
+                           target="_blank">常见疑问解答</a>
+
+                </span>
+                    </div>
+
+                </div>
+            </el-col>
+        </el-row>
+        <el-row style="margin-top: 60px;">
+            <el-col :span="18" :offset="3">
+
+                <el-form ref="yinliu" :model="yinliu" label-width="80px">
+                    <el-form-item label="商品类别">
+                        <el-select v-model="yinliu.type" placeholder="请选择活动区域">
+                            <el-option label="引流" value="0"></el-option>
+                            <el-option label="淘宝拉新" value="1"></el-option>
+                        </el-select>
+                    </el-form-item>
+                    <!--淘宝拉新业务-->
+                    <section v-if="yinliu.type == 1">
+                        <el-form-item label="输入地址">
+                            <el-input type="textarea" :rows="5" v-model="yinliu.url"
+                                      placeholder="请把在淘宝联盟复制出来的直接放入此处"></el-input>
+                        </el-form-item>
+                    </section>
+                    <!--原业务-->
+                    <section v-if="yinliu.type == 0">
+                        <el-form-item label="输入地址" v-if="descInput">
+                            <el-input type="textarea" :rows="5" v-model="yinliu.desc"
+                                      placeholder="请把在淘宝联盟复制出来的直接放入此处检测是否可用(请勿删减内容)"></el-input>
+                        </el-form-item>
+                        <el-form-item v-if="descInput">
+                            <el-button type="primary" @click="generateUrl">生成链接</el-button>
+                            <el-button @click="reset">清空</el-button>
+                        </el-form-item>
+                        <el-form-item label="引流链接">
+                            <el-input v-model="yinliu.url"></el-input>
+                        </el-form-item>
+                    </section>
+
+                    <el-form-item label="引流码">
+                        <el-input v-model="yinliu.code"></el-input>
+                    </el-form-item>
+                    <el-form-item>
+                        <el-button type="primary" @click="goYinLiu" :loading="loading">开始引流</el-button>
+                    </el-form-item>
+                </el-form>
+            </el-col>
+        </el-row>
+    </div>
+</div>
+
+<script>
+    var app = new Vue({
+        el: '#app',
+        data: function () {
+            return {
+                loading: false,
+                descInput: true,
+                yinliu: {
+                    desc: '',
+                    url: '',
+                    code: '',
+                    type: '1'
+                },
+                a: ''
+            }
+        },
+        methods: {
+            reset: function () {
+                app.yinliu.desc = ''
+            },
+            isURL: function (str) {
+                var reg = /[a-zA-z]+:\/\/[^\s]*/gi;
+                done_message = str.replace(reg, function ($1) {
+                    this.a = $1.toLowerCase();
+                    return;
+                });
+            },
+            generateUrl: function () {
+                var s = app.yinliu.desc;
+                if (s == '') {
+                    this.$message('不能为空');
+                    return false;
+                }
+                if (s.indexOf("券") > 0) {
+                    this.$message("连接不符合要求，分享商品不能带券");
+                    return false;
+                }
+                if(s.indexOf("￥")<0){
+                 this.$message("您的文案经过变动，请勿变动文案");
+                 return false;
+                 }
+
+                var n = s.search('http');
+                 //nsole.log(n)
+                 var urls =s.substring(n,n+40)
+                var url2 = this.RemoveChinese(urls)
+                if (confirm('确认商品链接不是粉丝购，即不带优惠券。带优惠券会引流失败。')) {
+
+                } else {
+                    return false;
+                }
+                app.yinliu.url = url2.substring(0,url2.indexOf('-'))
+                app.descInput = false
+            },
+            RemoveChinese: function (strValue) {
+                if (strValue != null && strValue != "") {
+                    var reg = /[\u4e00-\u9fa5]/g;
+                    return strValue.replace(reg, "");
+                }
+                else
+                    return "";
+            },
+            goYinLiu: function () {
+                var entity = {
+                    url: app.yinliu.url,
+                    code: app.yinliu.code,
+                    type: app.yinliu.type
+                }
+                if (entity.url == '' || entity.code == '') {
+                    app.$message.error("请输入相应数据！");
+                    return;
+                }
+                app.loading = true
+                //引流业务
+                if (entity.type == 0) {
+                    $.ajax({
+                        url: "/card/consume",
+                        type: 'post',
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        data: JSON.stringify(entity),
+                        success: function (data) {
+                            if (data.code == 500) {
+                                app.loading = false
+                                app.$message.error(data.msg);
+                            }
+                            if (data.code == 0) {
+                                app.loading = false
+                                app.$message.success("激活成功！引流数据第二天更新！！");
+                                setTimeout(function () {
+                                    location.reload()
+                                }, 3000);
+
+
+                            }
+                        }
+                    })
+                }
+                if (entity.type == 1) {
+                    $.ajax({
+                        url: "/laxin",
+                        type: 'post',
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        data: JSON.stringify(entity),
+                        success: function (data) {
+                            if (data.code == 500) {
+                                app.loading = false
+                                app.$message.error(data.msg);
+                            }
+                            if (data.code == 0) {
+                                app.loading = false
+                                app.$message.success("使用成功，请关注您的拉新状态！！！");
+                                setTimeout(function () {
+                                    location.reload()
+                                }, 3000);
+
+
+                            }
+                        }
+                    })
+                }
+
+            },
+            handleSelect: function (key, keyPath) {
+                console.log(key, keyPath);
+            }
+        }
+    })
+</script>
+</body>
+</html>
