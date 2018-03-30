@@ -54,6 +54,9 @@ public class CardStatController {
 
     @PostMapping("/import_common")
     public R importCard(@RequestParam("file") MultipartFile file, HttpServletRequest request) {
+        if (request.getSession().getAttribute("username") == null) {
+            return R.error();
+        }
         List<CardStatEntity> cardStatEntities = new ArrayList<>();
         try {
             InputStream inputStream = file.getInputStream();
@@ -80,6 +83,9 @@ public class CardStatController {
 
     @PostMapping("/import_laxin")
     public R importCardForLaxin(@RequestParam("file") MultipartFile file, HttpServletRequest request) {
+        if (request.getSession().getAttribute("username") == null) {
+            return R.error();
+        }
         List<CardStatEntity> cardStatEntities = new ArrayList<>();
         try {
             InputStream inputStream = file.getInputStream();
@@ -161,7 +167,10 @@ public class CardStatController {
      * @return
      */
     @PostMapping("")
-    public R save(@RequestBody CardStatEntity cardStat) {
+    public R save(@RequestBody CardStatEntity cardStat,HttpServletRequest request) {
+        if (request.getSession().getAttribute("username") == null) {
+            return R.error();
+        }
         cardStatService.save(cardStat);
 
         return R.ok();
@@ -173,7 +182,10 @@ public class CardStatController {
      * 查询所有卡券,可以按照(时间段，已使用，未使用)
      */
     @GetMapping("")
-    public R list(@RequestParam Map<String, Object> params) {
+    public R list(@RequestParam Map<String, Object> params,HttpServletRequest request) {
+        if (request.getSession().getAttribute("username") == null) {
+            return R.error();
+        }
         //查询列表数据
         Query query = new Query(params);
         if (params.get("page") != null && params.get("limit") != null) {
@@ -278,7 +290,10 @@ public class CardStatController {
      * 信息
      */
     @GetMapping("/{cardId}")
-    public R info(@PathVariable("cardId") Integer cardId) {
+    public R info(@PathVariable("cardId") Integer cardId,HttpServletRequest request) {
+        if (request.getSession().getAttribute("username") == null) {
+            return R.error();
+        }
         CardStatEntity cardStat = cardStatService.queryObject(cardId);
 
         return R.ok().put("cardStat", cardStat);
@@ -289,7 +304,10 @@ public class CardStatController {
      * 修改
      */
     @PutMapping("")
-    public R update(@RequestBody List<CardStatEntity> cardStats) {
+    public R update(@RequestBody List<CardStatEntity> cardStats,HttpServletRequest request) {
+        if (request.getSession().getAttribute("username") == null) {
+            return R.error();
+        }
         for (CardStatEntity cardStatEntity : cardStats) {
             cardStatEntity.setTaskState(true);
             cardStatService.update(cardStatEntity);
@@ -302,7 +320,10 @@ public class CardStatController {
      * 删除
      */
     @DeleteMapping("")
-    public R delete(@RequestBody Integer[] cardIds) {
+    public R delete(@RequestBody Integer[] cardIds,HttpServletRequest request) {
+        if (request.getSession().getAttribute("username") == null) {
+            return R.error();
+        }
         cardStatService.deleteBatch(cardIds);
 
         return R.ok();

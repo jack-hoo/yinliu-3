@@ -30,6 +30,10 @@ public class Main {
     public String query(){
         return "query";
     }
+    @RequestMapping("/employer")
+    public String employer(){
+        return "employer";
+    }
     @RequestMapping("/admin")
     public String admin(HttpServletRequest request){
         if (request.getSession().getAttribute("username") == null){

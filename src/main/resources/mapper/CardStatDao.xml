@@ -33,6 +33,9 @@
             <if test=" taskState != null and taskState != '' ">
                AND task_state = #{taskState}
             </if>
+            <if test=" usedForType != null and usedForType != '' ">
+                AND used_for_type = #{usedForType}
+            </if>
             <if test="usedTimeStart != null and usedTimeEnd != '' ">
                 and used_time &gt;= #{usedTimeStart}
             </if>
@@ -62,6 +65,9 @@
             <if test=" taskState != null and taskState != '' ">
                AND task_state = #{taskState}
             </if>
+            <if test=" usedForType != null and usedForType != '' ">
+                AND used_for_type = #{usedForType}
+            </if>
             <if test="usedTimeStart != null and usedTimeEnd != ''">
                 and used_time &gt;= #{usedTimeStart}
             </if>
@@ -88,11 +94,12 @@
 
     <insert id="saveBatch" parameterType="java.util.List">
         insert into card_stat
-        (card_number)
+        (card_number,used_for_type)
         VALUES
         <foreach collection ="list" item="card" index= "index" separator =",">
              (
-             #{card.cardNumber}
+             #{card.cardNumber},
+             #{card.usedForType}
              )
         </foreach >
 
